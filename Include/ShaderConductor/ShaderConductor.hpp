@@ -166,7 +166,45 @@ namespace ShaderConductor
             const char* version;
             bool asModule;
         };
+        
+        struct StageInput
+        {
+            std::string name;
+            int location;
+        };
 
+        struct Parameter
+        {
+            std::string name;
+            int type; // 1=bool, 2=int, 3=float
+            int rows;
+            int columns;
+            int byteOffset;
+        };
+
+        struct UniformBuffer
+        {
+            std::string name;
+            int byteSize; 
+            std::vector<Parameter> parameters;
+        };
+
+        struct Sampler
+        {
+            std::string name;
+            std::string originalName;
+            std::string textureName;
+            int slot;
+            int type; // 0=1D, 1=2D, 2=3D, 3=Cube
+        };
+
+        struct ReflectionDesc
+        {
+            std::vector<StageInput> stageInputs;
+            std::vector<UniformBuffer> uniformBuffers;
+            std::vector<Sampler> samplers;
+        };
+        
         struct ResultDesc
         {
             Blob* target;
@@ -174,6 +212,8 @@ namespace ShaderConductor
 
             Blob* errorWarningMsg;
             bool hasError;
+
+            ReflectionDesc* reflection;
         };
 
         struct DisassembleDesc

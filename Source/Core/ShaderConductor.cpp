@@ -395,11 +395,101 @@ namespace
         }
     }
 
+    Compiler::ReflectionDesc* GatherReflectionData(spirv_cross::Compiler* compiler)
+    {
+        Compiler::ReflectionDesc* ret = new Compiler::ReflectionDesc{};
+
+        auto shaderResources = compiler->get_shader_resources();
+
+        // get stage inputs
+        size_t stageInputCount = shaderResources.stage_inputs.size();
+
+        for (int i = 0; i < stageInputCount; ++i)
+        {
+            const spirv_cross::Resource& resource = shaderResources.stage_inputs[i];
+
+            auto stageInput = Compiler::StageInput{};
+            stageInput.name = resource.name;
+            stageInput.location = compiler->get_decoration(resource.id, spv::DecorationLocation); 
+
+            ret->stageInputs.push_back(stageInput);
+        }
+
+        // get uniform buffers
+        for (const spirv_cross::Resource& resource : shaderResources.uniform_buffers)
+        {
+            auto& type = compiler->get_type(resource.base_type_id);
+            
+            Compiler::UniformBuffer uniformBuffer{};
+            uniformBuffer.name = resource.name;
+            uniformBuffer.byteSize = (int)compiler->get_declared_struct_size(type);
+
+            size_t member_count = type.member_types.size();
+
+            for (unsigned i = 0; i < member_count; i++)
+            {
+                auto parameter = Compiler::Parameter{};
+
+                auto& member_type = compiler->get_type(type.member_types[i]);
+
+                parameter.name = compiler->get_member_name(type.self, i);
+                parameter.byteOffset = compiler->type_struct_member_offset(type, i);
+                parameter.rows = member_type.columns;
+                parameter.columns = member_type.vecsize;
+
+                switch (member_type.basetype)
+                {
+                    case spirv_cross::SPIRType::Boolean:
+                        parameter.type = 1;
+                        break;
+                    case spirv_cross::SPIRType::SByte:
+                    case spirv_cross::SPIRType::UByte:
+                    case spirv_cross::SPIRType::Short:
+                    case spirv_cross::SPIRType::UShort:
+                    case spirv_cross::SPIRType::Int:
+                    case spirv_cross::SPIRType::UInt:
+                    case spirv_cross::SPIRType::Int64:
+                    case spirv_cross::SPIRType::UInt64:
+                        parameter.type = 2;
+                        break;
+                    case spirv_cross::SPIRType::Half:
+                    case spirv_cross::SPIRType::Float:
+                    case spirv_cross::SPIRType::Double:
+                        parameter.type = 3;
+                        break;
+                };
+
+                uniformBuffer.parameters.push_back(parameter);
+            }
+            ret->uniformBuffers.push_back(uniformBuffer);
+        }
+
+        // get samplers
+        int samplerSlot = 0;
+        
+        for (auto& remap : compiler->get_combined_image_samplers())
+        {
+            Compiler::Sampler sampler{};
+
+            auto& image = compiler->get_type_from_variable(remap.combined_id).image;
+            
+            sampler.type = image.dim;
+            sampler.slot = samplerSlot++;
+            sampler.name = compiler->get_name(remap.combined_id);
+            sampler.originalName = compiler->get_name(remap.sampler_id);
+            sampler.textureName = compiler->get_name(remap.image_id);
+            
+            ret->samplers.push_back(sampler);
+        }
+
+        return ret;
+    }
+
     Compiler::ResultDesc CompileToBinary(const Compiler::SourceDesc& source, const Compiler::Options& options,
                                          ShadingLanguage targetLanguage, bool asModule)
     {
         assert((targetLanguage == ShadingLanguage::Dxil) || (targetLanguage == ShadingLanguage::SpirV));
-
+ 
         std::wstring shaderProfile;
         if (asModule)
         {
@@ -812,6 +902,7 @@ namespace
             const std::string targetStr = compiler->compile();
             ret.target = CreateBlob(targetStr.data(), static_cast<uint32_t>(targetStr.size()));
             ret.hasError = false;
+            ret.reflection = GatherReflectionData(compiler.get());
         }
         catch (spirv_cross::CompilerError& error)
         {
@@ -858,7 +949,7 @@ namespace
         {
             return binaryResult;
         }
-    }
+    }  
 } // namespace
 
 namespace ShaderConductor

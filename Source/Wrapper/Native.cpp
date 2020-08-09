@@ -69,7 +69,8 @@ void Compile(SourceDescription* source, OptionsDescription* optionsDesc, TargetD
         }
 
         result->hasError = translation.hasError;
-        result->isText = translation.isText;
+        result->isText = translation.isText;      
+        result->reflection = translation.reflection;
     }
     catch (std::exception& ex)
     {
@@ -119,4 +120,60 @@ const void* GetShaderConductorBlobData(ShaderConductorBlob* blob)
 int GetShaderConductorBlobSize(ShaderConductorBlob* blob)
 {
     return reinterpret_cast<Blob*>(blob)->Size();
+}
+
+Compiler::ReflectionDesc* GetReflection(ResultDescription* result)
+{
+    return result == nullptr ? nullptr : (Compiler::ReflectionDesc*)result->reflection;
+}
+
+int GetStageInputCount(ResultDescription* result)
+{
+    return GetReflection(result) == nullptr ? 0 : (int)GetReflection(result)->stageInputs.size();
+}
+
+int GetUniformBufferCount(ResultDescription* result)
+{
+    return GetReflection(result) == nullptr ? 0 : (int)GetReflection(result)->uniformBuffers.size();
+}
+
+int GetSamplerCount(ResultDescription* result)
+{
+    return GetReflection(result) == nullptr ? 0 : (int)GetReflection(result)->samplers.size();
+}
+
+void GetStageInput(ResultDescription* result, int stageInputIndex, char* name, int maxNameLength, int* location)
+{
+    Compiler::StageInput si = GetReflection(result)->stageInputs[stageInputIndex];
+    strcpy_s(name, maxNameLength, si.name.c_str());
+    *location = si.location;
+}
+
+void GetUniformBuffer(ResultDescription* result, int bufferIndex, char* name, int maxNameLength, int* byteSize, int* parameterCount)
+{
+    Compiler::UniformBuffer ub = GetReflection(result)->uniformBuffers[bufferIndex];
+    strcpy_s(name, maxNameLength, ub.name.c_str());
+    *byteSize = ub.byteSize;
+    *parameterCount = (int)ub.parameters.size();
+}
+
+
+void GetParameter(ResultDescription* result, int bufferIndex, int parameterIndex, char* name, int maxNameLength, int* type, int* rows, int* columns, int* byteOffset)
+{
+    Compiler::Parameter p = GetReflection(result)->uniformBuffers[bufferIndex].parameters[parameterIndex];
+    strcpy_s(name, maxNameLength, p.name.c_str());
+    *type = p.type;
+    *rows = p.rows;
+    *columns = p.columns;
+    *byteOffset = p.byteOffset;
+}
+
+void GetSampler(ResultDescription* result, int samplerIndex, char* name, char* originalName, char* textureName, int maxNameLength, int* type, int* slot)
+{
+    Compiler::Sampler s = GetReflection(result)->samplers[samplerIndex];
+    strcpy_s(name, maxNameLength, s.name.c_str());
+    strcpy_s(originalName, maxNameLength, s.originalName.c_str());
+    strcpy_s(textureName, maxNameLength, s.textureName.c_str());
+    *type = s.type;
+    *slot = s.slot;
 }

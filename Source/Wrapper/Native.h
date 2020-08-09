@@ -73,6 +73,8 @@ struct ResultDescription
 
     ShaderConductorBlob* errorWarningMsg;
     bool hasError;
+
+    void* reflection;
 };
 
 struct DisassembleDescription
@@ -91,3 +93,12 @@ DLLEXPORT ShaderConductorBlob* CreateShaderConductorBlob(const void* data, int s
 DLLEXPORT void DestroyShaderConductorBlob(ShaderConductorBlob* blob);
 DLLEXPORT const void* GetShaderConductorBlobData(ShaderConductorBlob* blob);
 DLLEXPORT int GetShaderConductorBlobSize(ShaderConductorBlob* blob);
+
+DLLEXPORT int GetStageInputCount(ResultDescription* result);
+DLLEXPORT int GetUniformBufferCount(ResultDescription* result);
+DLLEXPORT int GetSamplerCount(ResultDescription* result);
+
+DLLEXPORT void GetStageInput(ResultDescription* result, int stageInputIndex, char* name, int maxNameLength, int* location);
+DLLEXPORT void GetUniformBuffer(ResultDescription* result, int bufferIndex, char* name, int maxNameLength, int* byteSize, int* parameterCount);
+DLLEXPORT void GetParameter(ResultDescription* result, int bufferIndex, int parameterIndex, char* name, int maxNameLength, int* type, int* rows, int* columns, int* byteOffset);
+DLLEXPORT void GetSampler(ResultDescription* result, int samplerIndex, char* name, char* originalName, char* textureName, int maxNameLength, int* type, int* slot);
