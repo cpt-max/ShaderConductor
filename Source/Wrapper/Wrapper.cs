@@ -28,6 +28,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace CSharpConsole
@@ -51,6 +52,27 @@ namespace CSharpConsole
 
         [DllImport("ShaderConductorWrapper.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         public static extern int GetShaderConductorBlobSize(IntPtr blob);
+
+        [DllImport("ShaderConductorWrapper.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        private static extern int GetStageInputCount([In] ref ResultDesc result);
+
+        [DllImport("ShaderConductorWrapper.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        private static extern int GetUniformBufferCount([In] ref ResultDesc result);
+
+        [DllImport("ShaderConductorWrapper.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        private static extern int GetSamplerCount([In] ref ResultDesc result);
+
+        [DllImport("ShaderConductorWrapper.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        private static extern void GetStageInput([In] ref ResultDesc result, int stageInputIndex, byte[] name, int maxNameLength, out int location);
+
+        [DllImport("ShaderConductorWrapper.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        private static extern void GetUniformBuffer([In] ref ResultDesc result, int bufferIndex, byte[] blockName, byte[] instanceName, int maxNameLength, out int byteSize, out int parameterCount);
+
+        [DllImport("ShaderConductorWrapper.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        private static extern void GetParameter([In] ref ResultDesc result, int bufferIndex, int parameterIndex, byte[] name, int maxNameLength, out int type, out int rows, out int columns, out int byteOffset);
+
+        [DllImport("ShaderConductorWrapper.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        private static extern void GetSampler([In] ref ResultDesc result, int samplerIndex, byte[] name, byte[] originalName, byte[] textureName, int maxNameLength, out int type, out int slot);
 
         public enum ShaderStage
         {
@@ -159,6 +181,7 @@ namespace CSharpConsole
             public bool isText;
             public IntPtr errorWarningMsg;
             public bool hasError;
+            public IntPtr reflection;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -168,5 +191,163 @@ namespace CSharpConsole
             public IntPtr binary;
             public int binarySize;
         }
+
+        //==============================================================
+        // Reflection API
+        //==============================================================
+        public struct StageInput
+        {
+            public string name;
+            public int location;
+            public string usage;
+            public int index;
+        }
+
+        public struct UniformBuffer
+        {
+            public string blockName;
+            public string instanceName;
+            public int byteSize;
+            public List<Parameter> parameters;
+        }
+
+        public struct Parameter
+        {
+            public string name;
+            public int type;
+            public int rows;
+            public int columns;
+            public int offset;
+        }
+
+        public struct Sampler
+        {
+            public string name;
+            public string parameterName;
+            public string textureName;
+            public int slot;
+            public int type; // 1=1D, 2=2D, 3=3D, 4=Cube
+        }
+
+        public static List<StageInput> GetStageInputs(ResultDesc result)
+        {
+            byte[] nameBuffer = new byte[MaxNameLength];
+
+            int stageInputCount = GetStageInputCount(ref result);
+            var stageInputs = new List<StageInput>();
+
+            for (int i = 0; i < stageInputCount; i++)
+            {
+                GetStageInput(ref result, i, nameBuffer, MaxNameLength, out int location);
+
+                string name = ByteBufferToString(nameBuffer);
+                ExtractUsageAndIndexFromName(name, out string usage, out int index);
+
+                stageInputs.Add(new StageInput
+                {
+                    name = name,
+                    location = location,
+                    usage = usage,
+                    index = index,
+                });
+            }
+
+            return stageInputs;
+        }
+
+        public static List<UniformBuffer> GetUniformBuffers(ResultDesc result)
+        {
+            byte[] blockNameBuffer = new byte[MaxNameLength];
+            byte[] instanceNameBuffer = new byte[MaxNameLength];
+            byte[] parameterNameBuffer = new byte[MaxNameLength];
+
+            var buffers = new List<UniformBuffer>();
+            int bufferCount = GetUniformBufferCount(ref result);
+
+            for (int bufInd = 0; bufInd < bufferCount; bufInd++)
+            {
+                GetUniformBuffer(ref result, bufInd, blockNameBuffer, instanceNameBuffer, MaxNameLength, out int byteSize, out int parameterCount);
+
+                string blockName = ByteBufferToString(blockNameBuffer);
+                string instanceName = ByteBufferToString(instanceNameBuffer);
+
+                var parameters = new List<Parameter>();
+
+                for (int i = 0; i < parameterCount; i++)
+                {
+                    GetParameter(ref result, bufInd, i, parameterNameBuffer, MaxNameLength, out int type, out int rows, out int columns, out int offset);
+                    parameters.Add(new Parameter
+                    {
+                        name = ByteBufferToString(parameterNameBuffer),
+                        type = type,
+                        rows = rows,
+                        columns = columns,
+                        offset = offset,
+                    });
+                }
+
+                buffers.Add(new UniformBuffer
+                {
+                    blockName = blockName,
+                    instanceName = instanceName,
+                    byteSize = byteSize,
+                    parameters = parameters,
+                });
+            }
+
+            return buffers;
+        }
+
+        public static List<Sampler> GetSamplers(ResultDesc result)
+        {
+            var samplers = new List<Sampler>();
+
+            byte[] nameBuffer = new byte[MaxNameLength];
+            byte[] originalNameBuffer = new byte[MaxNameLength];
+            byte[] textureNameBuffer = new byte[MaxNameLength];
+
+            int samplerCount = GetSamplerCount(ref result);
+
+            for (int i = 0; i < samplerCount; i++)
+            {
+                GetSampler(ref result, i, nameBuffer, originalNameBuffer, textureNameBuffer, MaxNameLength, out int type, out int slot);
+
+                samplers.Add(new Sampler
+                {
+                    name = ByteBufferToString(nameBuffer),
+                    parameterName = ByteBufferToString(originalNameBuffer),
+                    textureName = ByteBufferToString(textureNameBuffer),
+                    slot = slot,
+                    type = type,
+                });
+            }
+
+            return samplers;
+        }
+
+        private static void ExtractUsageAndIndexFromName(string stageInputName, out string usage, out int index)
+        {
+            usage = "";
+            index = -1;
+
+            var match = usageRegex.Match(stageInputName);
+            if (match.Success)
+            {
+                usage = match.Groups["usage"].Value;
+                var matchIndex = match.Groups["index"];
+                if (matchIndex.Success)
+                    index = int.Parse(match.Groups["index"].Value);
+            }
+        }
+
+        private static string ByteBufferToString(byte[] buffer)
+        {
+            int nameLength = Array.IndexOf(buffer, (byte)0);
+            return Encoding.ASCII.GetString(buffer, 0, nameLength);
+        }
+
+        const int MaxNameLength = 1024;
+
+        private static Regex usageRegex = new Regex(@"invar_(?<usage>[A-Za-z]+)(?<index>[0-9]*)", RegexOptions.Compiled);
     }
 }

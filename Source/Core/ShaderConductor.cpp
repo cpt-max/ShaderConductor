@@ -410,7 +410,7 @@ namespace
 
             auto stageInput = Compiler::StageInput{};
             stageInput.name = resource.name;
-            stageInput.location = compiler->get_decoration(resource.id, spv::DecorationLocation); 
+            stageInput.location = compiler->get_decoration(resource.id, spv::DecorationLocation);
 
             ret->stageInputs.push_back(stageInput);
         }
@@ -419,9 +419,10 @@ namespace
         for (const spirv_cross::Resource& resource : shaderResources.uniform_buffers)
         {
             auto& type = compiler->get_type(resource.base_type_id);
-            
+
             Compiler::UniformBuffer uniformBuffer{};
-            uniformBuffer.name = resource.name;
+            uniformBuffer.blockName = resource.name;
+            uniformBuffer.instanceName = compiler->get_name(resource.id);
             uniformBuffer.byteSize = (int)compiler->get_declared_struct_size(type);
 
             size_t member_count = type.member_types.size();
@@ -439,24 +440,24 @@ namespace
 
                 switch (member_type.basetype)
                 {
-                    case spirv_cross::SPIRType::Boolean:
-                        parameter.type = 1;
-                        break;
-                    case spirv_cross::SPIRType::SByte:
-                    case spirv_cross::SPIRType::UByte:
-                    case spirv_cross::SPIRType::Short:
-                    case spirv_cross::SPIRType::UShort:
-                    case spirv_cross::SPIRType::Int:
-                    case spirv_cross::SPIRType::UInt:
-                    case spirv_cross::SPIRType::Int64:
-                    case spirv_cross::SPIRType::UInt64:
-                        parameter.type = 2;
-                        break;
-                    case spirv_cross::SPIRType::Half:
-                    case spirv_cross::SPIRType::Float:
-                    case spirv_cross::SPIRType::Double:
-                        parameter.type = 3;
-                        break;
+                case spirv_cross::SPIRType::Boolean:
+                    parameter.type = 1;
+                    break;
+                case spirv_cross::SPIRType::SByte:
+                case spirv_cross::SPIRType::UByte:
+                case spirv_cross::SPIRType::Short:
+                case spirv_cross::SPIRType::UShort:
+                case spirv_cross::SPIRType::Int:
+                case spirv_cross::SPIRType::UInt:
+                case spirv_cross::SPIRType::Int64:
+                case spirv_cross::SPIRType::UInt64:
+                    parameter.type = 2;
+                    break;
+                case spirv_cross::SPIRType::Half:
+                case spirv_cross::SPIRType::Float:
+                case spirv_cross::SPIRType::Double:
+                    parameter.type = 3;
+                    break;
                 };
 
                 uniformBuffer.parameters.push_back(parameter);
@@ -466,19 +467,19 @@ namespace
 
         // get samplers
         int samplerSlot = 0;
-        
+
         for (auto& remap : compiler->get_combined_image_samplers())
         {
             Compiler::Sampler sampler{};
 
             auto& image = compiler->get_type_from_variable(remap.combined_id).image;
-            
+
             sampler.type = image.dim;
             sampler.slot = samplerSlot++;
             sampler.name = compiler->get_name(remap.combined_id);
             sampler.originalName = compiler->get_name(remap.sampler_id);
             sampler.textureName = compiler->get_name(remap.image_id);
-            
+
             ret->samplers.push_back(sampler);
         }
 
@@ -904,8 +905,8 @@ namespace
         {
             const std::string targetStr = compiler->compile();
             ret.target = CreateBlob(targetStr.data(), static_cast<uint32_t>(targetStr.size()));
-            ret.hasError = false;
             ret.reflection = GatherReflectionData(compiler.get());
+            ret.hasError = false;  
         }
         catch (spirv_cross::CompilerError& error)
         {
