@@ -149,10 +149,12 @@ void GetStageInput(ResultDescription* result, int stageInputIndex, char* name, i
     *location = si.location;
 }
 
-void GetUniformBuffer(ResultDescription* result, int bufferIndex, char* name, int maxNameLength, int* byteSize, int* parameterCount)
+void GetUniformBuffer(ResultDescription* result, int bufferIndex, char* blockName, char* instanceName, int maxNameLength, int* byteSize,
+                      int* parameterCount)
 {
     Compiler::UniformBuffer ub = GetReflection(result)->uniformBuffers[bufferIndex];
-    strcpy_s(name, maxNameLength, ub.name.c_str());
+    strcpy_s(blockName, maxNameLength, ub.blockName.c_str());
+    strcpy_s(instanceName, maxNameLength, ub.instanceName.c_str());
     *byteSize = ub.byteSize;
     *parameterCount = (int)ub.parameters.size();
 }

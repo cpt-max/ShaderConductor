@@ -184,7 +184,8 @@ namespace ShaderConductor
 
         struct UniformBuffer
         {
-            std::string name;
+            std::string blockName;
+            std::string instanceName;
             int byteSize; 
             std::vector<Parameter> parameters;
         };
