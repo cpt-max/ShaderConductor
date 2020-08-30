@@ -54,26 +54,32 @@ namespace CSharpConsole
         public static extern int GetShaderConductorBlobSize(IntPtr blob);
 
         [DllImport("ShaderConductorWrapper.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int GetStageInputCount([In] ref ResultDesc result);
+        public static extern int GetStageInputCount([In] ref ResultDesc result);
 
         [DllImport("ShaderConductorWrapper.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int GetUniformBufferCount([In] ref ResultDesc result);
+        public static extern void GetStageInput([In] ref ResultDesc result, int stageInputIndex, byte[] name, int maxNameLength, out int location);
+
+        [DllImport("ShaderConductorWrapper.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int GetUniformBufferCount([In] ref ResultDesc result);
+
+        [DllImport("ShaderConductorWrapper.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void GetUniformBuffer([In] ref ResultDesc result, int bufferIndex, byte[] blockName, byte[] instanceName, int maxNameLength, out int byteSize, out int parameterCount);
+
+        [DllImport("ShaderConductorWrapper.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void GetParameter([In] ref ResultDesc result, int bufferIndex, int parameterIndex, byte[] name, int maxNameLength, out int type, out int rows, out int columns, out int byteOffset, out int arrayDimensions);
+
+        [DllImport("ShaderConductorWrapper.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void GetParameterArraySize([In] ref ResultDesc result, int bufferIndex, int parameterIndex, int dimension, out int arraySize);
 
         [DllImport("ShaderConductorWrapper.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         private static extern int GetSamplerCount([In] ref ResultDesc result);
 
         [DllImport("ShaderConductorWrapper.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void GetStageInput([In] ref ResultDesc result, int stageInputIndex, byte[] name, int maxNameLength, out int location);
+        private static extern void GetSampler([In] ref ResultDesc result, int samplerIndex, byte[] name, byte[] originalName, byte[] textureName, int maxNameLength, out int type, out int slot, out int textureSlot);
 
-        [DllImport("ShaderConductorWrapper.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void GetUniformBuffer([In] ref ResultDesc result, int bufferIndex, byte[] blockName, byte[] instanceName, int maxNameLength, out int byteSize, out int parameterCount);
 
-        [DllImport("ShaderConductorWrapper.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void GetParameter([In] ref ResultDesc result, int bufferIndex, int parameterIndex, byte[] name, int maxNameLength, out int type, out int rows, out int columns, out int byteOffset);
 
-        [DllImport("ShaderConductorWrapper.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void GetSampler([In] ref ResultDesc result, int samplerIndex, byte[] name, byte[] originalName, byte[] textureName, int maxNameLength, out int type, out int slot);
-
+ 
         public enum ShaderStage
         {
             VertexShader,
@@ -218,14 +224,17 @@ namespace CSharpConsole
             public int rows;
             public int columns;
             public int offset;
+            public int arrayDimensions; // 0 = no array, 1 = 1D array, 2 = 2D array, ...
+            public List<int> arraySize; // one entry for each array dimension
         }
 
         public struct Sampler
         {
             public string name;
-            public string parameterName;
+            public string originalName;
             public string textureName;
             public int slot;
+            public int textureSlot;
             public int type; // 1=1D, 2=2D, 3=3D, 4=Cube
         }
 
@@ -275,15 +284,25 @@ namespace CSharpConsole
 
                 for (int i = 0; i < parameterCount; i++)
                 {
-                    GetParameter(ref result, bufInd, i, parameterNameBuffer, MaxNameLength, out int type, out int rows, out int columns, out int offset);
-                    parameters.Add(new Parameter
+                    GetParameter(ref result, bufInd, i, parameterNameBuffer, MaxNameLength, out int type, out int rows, out int columns, out int offset, out int arrayDimensions);
+                    var param = new Parameter
                     {
                         name = ByteBufferToString(parameterNameBuffer),
                         type = type,
                         rows = rows,
                         columns = columns,
                         offset = offset,
-                    });
+                        arrayDimensions = arrayDimensions,
+                        arraySize = new List<int>(),
+                    };
+
+                    for (int dim = 0; dim < arrayDimensions; dim++)
+                    {
+                        GetParameterArraySize(ref result, bufInd, i, dim, out int arraySize);
+                        param.arraySize.Add(arraySize);
+                    }
+
+                    parameters.Add(param);
                 }
 
                 buffers.Add(new UniformBuffer
@@ -308,18 +327,42 @@ namespace CSharpConsole
 
             int samplerCount = GetSamplerCount(ref result);
 
+            var samplerSlotToSampler = new Dictionary<int, Sampler>();
+            var textureSlotToTextureName = new Dictionary<int, string>();
+
             for (int i = 0; i < samplerCount; i++)
             {
-                GetSampler(ref result, i, nameBuffer, originalNameBuffer, textureNameBuffer, MaxNameLength, out int type, out int slot);
+                GetSampler(ref result, i, nameBuffer, originalNameBuffer, textureNameBuffer, MaxNameLength, out int type, out int slot, out int textureSlot);
 
-                samplers.Add(new Sampler
+                var sampler = new Sampler
                 {
                     name = ByteBufferToString(nameBuffer),
-                    parameterName = ByteBufferToString(originalNameBuffer),
+                    originalName = ByteBufferToString(originalNameBuffer),
                     textureName = ByteBufferToString(textureNameBuffer),
                     slot = slot,
+                    textureSlot = textureSlot,
                     type = type,
-                });
+                };
+
+                samplers.Add(sampler);
+
+                // make sure there are no overlap conflicts with the sampler and texture slots
+                if (samplerSlotToSampler.TryGetValue(slot, out Sampler s))
+                {
+                    if (sampler.originalName == s.originalName)
+                        throw new Exception("Sampler '" + sampler.originalName + "' is used to sample from multiple textures. You may only assign a register slot to a sampler if it samples from one texture only.");
+                    else
+                        throw new Exception("Sampler '" + sampler.originalName + "' and sampler '" + s.originalName + "' are assigned to the same register slot " + slot);
+                }
+
+                if (textureSlotToTextureName.TryGetValue(textureSlot, out string texName))
+                {
+                    if (sampler.textureName != texName)
+                        throw new Exception("Texture '" + sampler.textureName + "' and texture '" + texName + "' can not be assigned to the same register slot " + textureSlot);
+                }
+
+                samplerSlotToSampler[slot] = sampler;
+                textureSlotToTextureName[textureSlot] = sampler.textureName;
             }
 
             return samplers;
@@ -347,6 +390,6 @@ namespace CSharpConsole
 
         const int MaxNameLength = 1024;
 
-        private static Regex usageRegex = new Regex(@"invar_(?<usage>[A-Za-z]+)(?<index>[0-9]*)", RegexOptions.Compiled);
+        private static Regex usageRegex = new Regex(@"in_var_(?<usage>[A-Za-z]+)(?<index>[0-9]*)", RegexOptions.Compiled);
     }
 }

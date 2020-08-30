@@ -435,8 +435,12 @@ namespace
 
                 parameter.name = compiler->get_member_name(type.self, i);
                 parameter.byteOffset = compiler->type_struct_member_offset(type, i);
-                parameter.rows = member_type.columns;
-                parameter.columns = member_type.vecsize;
+                parameter.rows = member_type.vecsize;
+                parameter.columns = member_type.columns;
+                parameter.arrayDimensions = (int)member_type.array.size(); 
+
+                for (int dim = 0; dim < parameter.arrayDimensions; ++dim)
+                    parameter.arraySize.push_back(member_type.array[dim]);
 
                 switch (member_type.basetype)
                 {
@@ -458,7 +462,7 @@ namespace
                 case spirv_cross::SPIRType::Double:
                     parameter.type = 3;
                     break;
-                };
+                };         
 
                 uniformBuffer.parameters.push_back(parameter);
             }
@@ -466,19 +470,18 @@ namespace
         }
 
         // get samplers
-        int samplerSlot = 0;
-
         for (auto& remap : compiler->get_combined_image_samplers())
         {
             Compiler::Sampler sampler{};
 
             auto& image = compiler->get_type_from_variable(remap.combined_id).image;
 
-            sampler.type = image.dim;
-            sampler.slot = samplerSlot++;
             sampler.name = compiler->get_name(remap.combined_id);
             sampler.originalName = compiler->get_name(remap.sampler_id);
             sampler.textureName = compiler->get_name(remap.image_id);
+            sampler.slot = compiler->get_decoration(remap.sampler_id, spv::DecorationBinding);
+            sampler.textureSlot = compiler->get_decoration(remap.image_id, spv::DecorationBinding);
+            sampler.type = image.dim;
 
             ret->samplers.push_back(sampler);
         }

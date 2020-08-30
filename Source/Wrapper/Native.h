@@ -95,10 +95,17 @@ DLLEXPORT const void* GetShaderConductorBlobData(ShaderConductorBlob* blob);
 DLLEXPORT int GetShaderConductorBlobSize(ShaderConductorBlob* blob);
 
 DLLEXPORT int GetStageInputCount(ResultDescription* result);
-DLLEXPORT int GetUniformBufferCount(ResultDescription* result);
-DLLEXPORT int GetSamplerCount(ResultDescription* result);
-
 DLLEXPORT void GetStageInput(ResultDescription* result, int stageInputIndex, char* name, int maxNameLength, int* location);
+
+DLLEXPORT int GetUniformBufferCount(ResultDescription* result);
 DLLEXPORT void GetUniformBuffer(ResultDescription* result, int bufferIndex, char* blockName, char* instanceName, int maxNameLength, int* byteSize, int* parameterCount);
-DLLEXPORT void GetParameter(ResultDescription* result, int bufferIndex, int parameterIndex, char* name, int maxNameLength, int* type, int* rows, int* columns, int* byteOffset);
-DLLEXPORT void GetSampler(ResultDescription* result, int samplerIndex, char* name, char* originalName, char* textureName, int maxNameLength, int* type, int* slot);
+
+DLLEXPORT void GetParameter(ResultDescription* result, int bufferIndex, int parameterIndex, char* name, int maxNameLength, int* type, int* rows, int* columns, int* byteOffset, int* arrayDimensions);
+DLLEXPORT void GetParameterArraySize(ResultDescription* result, int bufferIndex, int parameterIndex, int dimension, int* arraySize);
+
+DLLEXPORT int GetSamplerCount(ResultDescription* result);
+DLLEXPORT void GetSampler(ResultDescription* result, int samplerIndex, char* name, char* originalName, char* textureName, int maxNameLength, int* type, int* slot, int* textureSlot);
+
+
+
+

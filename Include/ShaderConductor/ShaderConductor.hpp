@@ -180,6 +180,8 @@ namespace ShaderConductor
             int rows;
             int columns;
             int byteOffset;
+            int arrayDimensions; // 0 = no array, 1 = 1D array, 2 = 2D array, ...
+            std::vector<int> arraySize; // one entry for each array dimension
         };
 
         struct UniformBuffer
@@ -196,6 +198,7 @@ namespace ShaderConductor
             std::string originalName;
             std::string textureName;
             int slot;
+            int textureSlot;
             int type; // 0=1D, 1=2D, 2=3D, 3=Cube
         };
 

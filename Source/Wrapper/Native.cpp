@@ -159,8 +159,7 @@ void GetUniformBuffer(ResultDescription* result, int bufferIndex, char* blockNam
     *parameterCount = (int)ub.parameters.size();
 }
 
-
-void GetParameter(ResultDescription* result, int bufferIndex, int parameterIndex, char* name, int maxNameLength, int* type, int* rows, int* columns, int* byteOffset)
+void GetParameter(ResultDescription* result, int bufferIndex, int parameterIndex, char* name, int maxNameLength, int* type, int* rows, int* columns, int* byteOffset, int* arrayDimensions)
 {
     Compiler::Parameter p = GetReflection(result)->uniformBuffers[bufferIndex].parameters[parameterIndex];
     strcpy_s(name, maxNameLength, p.name.c_str());
@@ -168,9 +167,16 @@ void GetParameter(ResultDescription* result, int bufferIndex, int parameterIndex
     *rows = p.rows;
     *columns = p.columns;
     *byteOffset = p.byteOffset;
+    *arrayDimensions = p.arrayDimensions;
 }
 
-void GetSampler(ResultDescription* result, int samplerIndex, char* name, char* originalName, char* textureName, int maxNameLength, int* type, int* slot)
+void GetParameterArraySize(ResultDescription* result, int bufferIndex, int parameterIndex, int dimension, int* arraySize)
+{
+    Compiler::Parameter p = GetReflection(result)->uniformBuffers[bufferIndex].parameters[parameterIndex];
+    *arraySize = p.arraySize[dimension];
+}
+
+void GetSampler(ResultDescription* result, int samplerIndex, char* name, char* originalName, char* textureName, int maxNameLength, int* type, int* slot, int* textureSlot)
 {
     Compiler::Sampler s = GetReflection(result)->samplers[samplerIndex];
     strcpy_s(name, maxNameLength, s.name.c_str());
@@ -178,4 +184,5 @@ void GetSampler(ResultDescription* result, int samplerIndex, char* name, char* o
     strcpy_s(textureName, maxNameLength, s.textureName.c_str());
     *type = s.type;
     *slot = s.slot;
+    *textureSlot = s.textureSlot;
 }
