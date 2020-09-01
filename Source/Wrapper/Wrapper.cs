@@ -28,8 +28,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+//using System.Text.RegularExpressions;
 
 namespace CSharpConsole
 {
@@ -250,14 +250,14 @@ namespace CSharpConsole
                 GetStageInput(ref result, i, nameBuffer, MaxNameLength, out int location);
 
                 string name = ByteBufferToString(nameBuffer);
-                ExtractUsageAndIndexFromName(name, out string usage, out int index);
+                //ExtractUsageAndIndexFromName(name, out string usage, out int index);
 
                 stageInputs.Add(new StageInput
                 {
                     name = name,
                     location = location,
-                    usage = usage,
-                    index = index,
+                    //usage = usage,
+                    //index = index,
                 });
             }
 
@@ -368,11 +368,20 @@ namespace CSharpConsole
             return samplers;
         }
 
+        private static string ByteBufferToString(byte[] buffer)
+        {
+            int nameLength = Array.IndexOf(buffer, (byte)0);
+            return Encoding.ASCII.GetString(buffer, 0, nameLength);
+        }
+
+        const int MaxNameLength = 1024;
+
+        /*
         private static void ExtractUsageAndIndexFromName(string stageInputName, out string usage, out int index)
         {
             usage = "";
             index = -1;
-
+            
             var match = usageRegex.Match(stageInputName);
             if (match.Success)
             {
@@ -382,14 +391,7 @@ namespace CSharpConsole
             }
         }
 
-        private static string ByteBufferToString(byte[] buffer)
-        {
-            int nameLength = Array.IndexOf(buffer, (byte)0);
-            return Encoding.ASCII.GetString(buffer, 0, nameLength);
-        }
-
-        const int MaxNameLength = 1024;
-
         private static Regex usageRegex = new Regex(@"in_var_(?<usage>[A-Za-z]+)(?<index>[0-9]*)", RegexOptions.Compiled);
+        */
     }
 }
