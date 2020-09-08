@@ -809,7 +809,7 @@ namespace
         }
         opts.es = (target.language == ShadingLanguage::Essl);
         opts.force_temporary = false;
-        opts.separate_shader_objects = false;
+        opts.separate_shader_objects = true;
         opts.flatten_multidimensional_arrays = false;
         opts.enable_420pack_extension =
             (target.language == ShadingLanguage::Glsl) && ((target.version == nullptr) || (opts.version >= 420));
