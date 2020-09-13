@@ -197,8 +197,8 @@ namespace ShaderConductor
             std::string name;
             std::string originalName;
             std::string textureName;
-            int slot;
-            int textureSlot;
+            int slot;         // DirectX sampler register binding
+            int textureSlot;  // DirectX texture register binding
             int type; // 0=1D, 1=2D, 2=3D, 3=Cube
         };
 
