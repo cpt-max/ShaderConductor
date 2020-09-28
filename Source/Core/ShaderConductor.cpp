@@ -505,9 +505,9 @@ namespace
         }
     }
 
-    Compiler::ReflectionDesc* GatherReflectionData(spirv_cross::Compiler* compiler)
+    Compiler::ReflectionDescSPIRV* GatherReflectionData(spirv_cross::Compiler* compiler)
     {
-        Compiler::ReflectionDesc* ret = new Compiler::ReflectionDesc{};
+        Compiler::ReflectionDescSPIRV* ret = new Compiler::ReflectionDescSPIRV{};
 
         auto shaderResources = compiler->get_shader_resources();
 
@@ -1025,7 +1025,7 @@ namespace
             ret.reflection.descCount = binaryResult.reflection.descCount;
             ret.reflection.instructionCount = binaryResult.reflection.instructionCount;
 
-            ret.reflection = GatherReflectionData(compiler.get());
+            ret.reflectionSPIRV = GatherReflectionData(compiler.get());
         }
         catch (spirv_cross::CompilerError& error)
         {

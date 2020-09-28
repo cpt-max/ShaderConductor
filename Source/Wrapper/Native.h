@@ -74,7 +74,7 @@ struct ResultDescription
     ShaderConductorBlob* errorWarningMsg;
     bool hasError;
 
-    void* reflection;
+    void* reflectionSPIRV;
 };
 
 struct DisassembleDescription

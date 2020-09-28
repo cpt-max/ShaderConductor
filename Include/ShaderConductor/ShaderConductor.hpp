@@ -225,13 +225,12 @@ namespace ShaderConductor
             int type; // 0=1D, 1=2D, 2=3D, 3=Cube
         };
 
-        struct ReflectionDesc
+        struct ReflectionDescSPIRV
         {
             std::vector<StageInput> stageInputs;
             std::vector<UniformBuffer> uniformBuffers;
             std::vector<Sampler> samplers;
-        };
-        
+        };       
 
         struct ReflectionDesc
         {
@@ -258,8 +257,7 @@ namespace ShaderConductor
             bool hasError;
 
             ReflectionResultDesc reflection;
-
-            ReflectionDesc* reflection;
+            ReflectionDescSPIRV* reflectionSPIRV;
         };
 
         struct DisassembleDesc

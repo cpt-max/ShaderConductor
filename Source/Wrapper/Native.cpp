@@ -70,7 +70,7 @@ void Compile(SourceDescription* source, OptionsDescription* optionsDesc, TargetD
 
         result->hasError = translation.hasError;
         result->isText = translation.isText;      
-        result->reflection = translation.reflection;
+        result->reflectionSPIRV = translation.reflectionSPIRV;
     }
     catch (std::exception& ex)
     {
@@ -123,9 +123,9 @@ int GetShaderConductorBlobSize(ShaderConductorBlob* blob)
     return reinterpret_cast<Blob*>(blob)->Size();
 }
 
-Compiler::ReflectionDesc* GetReflection(ResultDescription* result)
+Compiler::ReflectionDescSPIRV* GetReflection(ResultDescription* result)
 {
-    return result == nullptr ? nullptr : (Compiler::ReflectionDesc*)result->reflection;
+    return result == nullptr ? nullptr : (Compiler::ReflectionDescSPIRV*)result->reflectionSPIRV;
 }
 
 int GetStageInputCount(ResultDescription* result)
