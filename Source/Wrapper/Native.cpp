@@ -143,11 +143,13 @@ int GetSamplerCount(ResultDescription* result)
     return GetReflection(result) == nullptr ? 0 : (int)GetReflection(result)->samplers.size();
 }
 
-void GetStageInput(ResultDescription* result, int stageInputIndex, char* name, int maxNameLength, int* location)
+void GetStageInput(ResultDescription* result, int stageInputIndex, char* name, int maxNameLength, int* location, int* rows, int* columns)
 {
     Compiler::StageInput si = GetReflection(result)->stageInputs[stageInputIndex];
     strcpy_s(name, maxNameLength, si.name.c_str());
     *location = si.location;
+    *rows = si.rows;
+    *columns = si.columns;
 }
 
 void GetUniformBuffer(ResultDescription* result, int bufferIndex, char* blockName, char* instanceName, int maxNameLength, int* byteSize,

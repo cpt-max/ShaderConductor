@@ -194,6 +194,8 @@ namespace ShaderConductor
         {
             std::string name;
             int location;
+            int rows;
+            int columns;
         };
 
         struct Parameter

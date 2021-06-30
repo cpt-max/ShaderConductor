@@ -517,10 +517,13 @@ namespace
         for (int i = 0; i < stageInputCount; ++i)
         {
             const spirv_cross::Resource& resource = shaderResources.stage_inputs[i];
+            auto& type = compiler->get_type(resource.base_type_id);
 
             auto stageInput = Compiler::StageInput{};
             stageInput.name = resource.name;
             stageInput.location = compiler->get_decoration(resource.id, spv::DecorationLocation);
+            stageInput.rows = (int)type.vecsize;
+            stageInput.columns = (int)type.columns;
 
             ret->stageInputs.push_back(stageInput);
         }

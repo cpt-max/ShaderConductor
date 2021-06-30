@@ -95,7 +95,7 @@ DLLEXPORT const void* GetShaderConductorBlobData(ShaderConductorBlob* blob);
 DLLEXPORT int GetShaderConductorBlobSize(ShaderConductorBlob* blob);
 
 DLLEXPORT int GetStageInputCount(ResultDescription* result);
-DLLEXPORT void GetStageInput(ResultDescription* result, int stageInputIndex, char* name, int maxNameLength, int* location);
+DLLEXPORT void GetStageInput(ResultDescription* result, int stageInputIndex, char* name, int maxNameLength, int* location, int* rows, int* columns);
 
 DLLEXPORT int GetUniformBufferCount(ResultDescription* result);
 DLLEXPORT void GetUniformBuffer(ResultDescription* result, int bufferIndex, char* blockName, char* instanceName, int maxNameLength, int* byteSize, int* parameterCount);
