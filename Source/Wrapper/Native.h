@@ -98,7 +98,7 @@ DLLEXPORT int GetStageInputCount(ResultDescription* result);
 DLLEXPORT void GetStageInput(ResultDescription* result, int stageInputIndex, char* name, int maxNameLength, int* location, int* rows, int* columns);
 
 DLLEXPORT int GetUniformBufferCount(ResultDescription* result);
-DLLEXPORT void GetUniformBuffer(ResultDescription* result, int bufferIndex, char* blockName, char* instanceName, int maxNameLength, int* byteSize, int* parameterCount);
+DLLEXPORT void GetUniformBuffer(ResultDescription* result, int bufferIndex, char* blockName, char* instanceName, int maxNameLength, int* byteSize, int* slot, int* parameterCount);
 
 DLLEXPORT void GetParameter(ResultDescription* result, int bufferIndex, int parameterIndex, char* name, int maxNameLength, int* type, int* rows, int* columns, int* byteOffset, int* arrayDimensions);
 DLLEXPORT void GetParameterArraySize(ResultDescription* result, int bufferIndex, int parameterIndex, int dimension, int* arraySize);
@@ -106,6 +106,7 @@ DLLEXPORT void GetParameterArraySize(ResultDescription* result, int bufferIndex,
 DLLEXPORT int GetSamplerCount(ResultDescription* result);
 DLLEXPORT void GetSampler(ResultDescription* result, int samplerIndex, char* name, char* originalName, char* textureName, int maxNameLength, int* type, int* slot, int* textureSlot);
 
-
+DLLEXPORT int GetStorageBufferCount(ResultDescription* result);
+DLLEXPORT void GetStorageBuffer(ResultDescription* result, int bufferIndex, char* blockName, char* instanceName, int maxNameLength, int* byteSize, int* slot, bool* readonly);
 
 

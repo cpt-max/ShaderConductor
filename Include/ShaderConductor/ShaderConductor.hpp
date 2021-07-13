@@ -214,7 +214,17 @@ namespace ShaderConductor
             std::string blockName;
             std::string instanceName;
             int byteSize; 
+            int slot;
             std::vector<Parameter> parameters;
+        };
+
+        struct StorageBuffer
+        {
+            std::string blockName;
+            std::string instanceName;
+            int byteSize;
+            int slot;
+            bool readonly;
         };
 
         struct Sampler
@@ -231,6 +241,7 @@ namespace ShaderConductor
         {
             std::vector<StageInput> stageInputs;
             std::vector<UniformBuffer> uniformBuffers;
+            std::vector<StorageBuffer> storageBuffers;
             std::vector<Sampler> samplers;
         };       
 

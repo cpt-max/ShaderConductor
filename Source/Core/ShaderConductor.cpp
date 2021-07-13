@@ -537,6 +537,7 @@ namespace
             uniformBuffer.blockName = resource.name;
             uniformBuffer.instanceName = compiler->get_name(resource.id);
             uniformBuffer.byteSize = (int)compiler->get_declared_struct_size(type);
+            uniformBuffer.slot = compiler->get_decoration(resource.id, spv::DecorationBinding);
 
             size_t member_count = type.member_types.size();
 
@@ -550,7 +551,7 @@ namespace
                 parameter.byteOffset = compiler->type_struct_member_offset(type, i);
                 parameter.rows = member_type.vecsize;
                 parameter.columns = member_type.columns;
-                parameter.arrayDimensions = (int)member_type.array.size(); 
+                parameter.arrayDimensions = (int)member_type.array.size();
 
                 for (int dim = 0; dim < parameter.arrayDimensions; ++dim)
                     parameter.arraySize.push_back(member_type.array[dim]);
@@ -575,11 +576,27 @@ namespace
                 case spirv_cross::SPIRType::Double:
                     parameter.type = 3;
                     break;
-                };         
+                };
 
                 uniformBuffer.parameters.push_back(parameter);
             }
             ret->uniformBuffers.push_back(uniformBuffer);
+        }
+
+        // get storage buffers
+        for (const spirv_cross::Resource& resource : shaderResources.storage_buffers)
+        {
+            auto& type = compiler->get_type(resource.base_type_id);
+            auto bufferFlags = compiler->get_buffer_block_flags(resource.id);
+
+            Compiler::StorageBuffer storageBuffer{};
+            storageBuffer.blockName = resource.name;
+            storageBuffer.instanceName = compiler->get_name(resource.id);
+            storageBuffer.byteSize = (int)compiler->get_declared_struct_size(type);
+            storageBuffer.slot = compiler->get_decoration(resource.id, spv::DecorationBinding);
+            storageBuffer.readonly = bufferFlags.get(spv::DecorationNonWritable); 
+
+            ret->storageBuffers.push_back(storageBuffer);
         }
 
         // get samplers
@@ -916,7 +933,7 @@ namespace
         }
         compiler->set_entry_point(source.entryPoint, model);
 
-        spirv_cross::CompilerGLSL::Options opts = compiler->get_common_options();
+        spirv_cross::CompilerGLSL::Options opts = compiler->get_common_options();     
         if (target.version != nullptr)
         {
             opts.version = intVersion;
@@ -932,7 +949,7 @@ namespace
         opts.vertex.flip_vert_y = false;
         opts.vertex.support_nonzero_base_instance = true;
         compiler->set_common_options(opts);
-
+        
         if (target.language == ShadingLanguage::Hlsl)
         {
             auto* hlslCompiler = static_cast<spirv_cross::CompilerHLSL*>(compiler.get());

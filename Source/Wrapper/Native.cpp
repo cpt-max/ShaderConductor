@@ -143,6 +143,11 @@ int GetSamplerCount(ResultDescription* result)
     return GetReflection(result) == nullptr ? 0 : (int)GetReflection(result)->samplers.size();
 }
 
+int GetStorageBufferCount(ResultDescription* result)
+{
+    return GetReflection(result) == nullptr ? 0 : (int)GetReflection(result)->storageBuffers.size();
+}
+
 void GetStageInput(ResultDescription* result, int stageInputIndex, char* name, int maxNameLength, int* location, int* rows, int* columns)
 {
     Compiler::StageInput si = GetReflection(result)->stageInputs[stageInputIndex];
@@ -152,13 +157,13 @@ void GetStageInput(ResultDescription* result, int stageInputIndex, char* name, i
     *columns = si.columns;
 }
 
-void GetUniformBuffer(ResultDescription* result, int bufferIndex, char* blockName, char* instanceName, int maxNameLength, int* byteSize,
-                      int* parameterCount)
+void GetUniformBuffer(ResultDescription* result, int bufferIndex, char* blockName, char* instanceName, int maxNameLength, int* byteSize, int* slot, int* parameterCount)
 {
     Compiler::UniformBuffer ub = GetReflection(result)->uniformBuffers[bufferIndex];
     strcpy_s(blockName, maxNameLength, ub.blockName.c_str());
     strcpy_s(instanceName, maxNameLength, ub.instanceName.c_str());
     *byteSize = ub.byteSize;
+    *slot = ub.slot;
     *parameterCount = (int)ub.parameters.size();
 }
 
@@ -188,4 +193,14 @@ void GetSampler(ResultDescription* result, int samplerIndex, char* name, char* o
     *type = s.type;
     *slot = s.slot;
     *textureSlot = s.textureSlot;
+}
+
+void GetStorageBuffer(ResultDescription* result, int bufferIndex, char* blockName, char* instanceName, int maxNameLength, int* byteSize, int* slot, bool* readonly)
+{
+    Compiler::StorageBuffer sb = GetReflection(result)->storageBuffers[bufferIndex];
+    strcpy_s(blockName, maxNameLength, sb.blockName.c_str());
+    strcpy_s(instanceName, maxNameLength, sb.instanceName.c_str());
+    *byteSize = sb.byteSize;
+    *slot = sb.slot;
+    *readonly = sb.readonly;
 }
